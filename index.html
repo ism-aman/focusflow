@@ -122,7 +122,10 @@ html{scroll-behavior:smooth}body{overscroll-behavior-y:contain;-webkit-tap-highl
 .b{transition:transform .15s,box-shadow .2s,background .2s}.b:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,90,46,.28)}.b:active{transform:scale(.94)}.tk:active{transform:scale(.85)}
 </style></head><body>
 <nav id="nav"></nav><main id="app"></main><div class="mob" id="mob"></div><button class="b" id="nvt" data-a="nv" aria-label="Menu">☰</button><div id="nvb" data-a="nv"></div><div id="toast"></div><button class="b p" id="fx" data-a="fm">Exit focus mode</button>
-<script>window.FB_CONFIG={}</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
 const $=s=>document.querySelector(s),K='ff_data',TK='ff_timer';
 const dk=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
