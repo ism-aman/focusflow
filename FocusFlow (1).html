@@ -335,4 +335,42 @@ document.addEventListener('change',e=>{if(e.target.id==='bgs'){S.cfg.bg=e.target
 const _r2=render;render=function(){const o=S.cfg.off||{};if(o[view]&&view!=='set')view=V.find(x=>!o[x[0]])[0];_r2()};
 {const u=new URLSearchParams(location.search),q=u.get('v'),i=u.get('done');if(q==='rem'){view=q}if(i){remDone(i);history.replaceState(null,'',location.pathname)}if(q==='rem')render()}
 </script>
+<script>
+/* v10: Google Calendar for reminders, habits, journal (+ .ics with alert) */
+const gcz=n=>String(n).padStart(2,'0'),
+gcf=d=>d.getFullYear()+gcz(d.getMonth()+1)+gcz(d.getDate())+'T'+gcz(d.getHours())+gcz(d.getMinutes())+'00',
+gcNext=()=>{const d=new Date(Date.now()+6e5);d.setMinutes(Math.ceil(d.getMinutes()/5)*5,0,0);return gcz(d.getHours())+':'+gcz(d.getMinutes())};
+function gcLink(title,d,t,daily,note){const a=new Date(d+'T'+t),b=new Date(a.getTime()+9e5);
+return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+gcf(a)+'/'+gcf(b)+(daily?'&recur='+encodeURIComponent('RRULE:FREQ=DAILY'):'')+'&details='+encodeURIComponent(note||'Added from FocusFlow')+'&ctz='+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}
+function gcIcs(title,d,t,daily){const a=new Date(d+'T'+t),b=new Date(a.getTime()+9e5),u=Date.now()+'@focusflow';
+const s=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FocusFlow//EN','BEGIN:VEVENT','UID:'+u,'DTSTAMP:'+gcf(new Date())+'00'.slice(0,0),'DTSTART:'+gcf(a),'DTEND:'+gcf(b)];
+s[5]='DTSTAMP:'+gcf(new Date());
+if(daily)s.push('RRULE:FREQ=DAILY');
+s.push('SUMMARY:'+title.replace(/[,;\n]/g,' '),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title.replace(/[,;\n]/g,' '),'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR');
+const bl=new Blob([s.join('\r\n')],{type:'text/calendar'}),l=document.createElement('a');l.href=URL.createObjectURL(bl);l.download='focusflow-reminder.ics';document.body.appendChild(l);l.click();l.remove();toast('Open the downloaded file with Google Calendar')}
+
+/* Reminders: default time + auto-open Google Calendar on Add + .ics button */
+const _gcRem=V_.rem;
+V_.rem=function(){return _gcRem().replace('id="rm" type="time"','id="rm" type="time" value="'+gcNext()+'"').replace(/(<button class="b x" data-a="rcal" data-i="([^"]+)"[^>]*>📅<\/button>)/g,'$1<button class="b x" data-a="rics" data-i="$2" title="Calendar file with alert">🔔</button>')};
+const _gcAdd=A.radd;
+A.radd=()=>{const t=($('#rt')||{}).value,d=$('#rd').value||dk(),tm=$('#rm').value||'09:00';if(!t||!t.trim())return _gcAdd();_gcAdd();openCal(gcLink(t.trim(),d,tm,false))};
+A.rics=i=>{const r=(S.rems||[]).find(x=>x.id===i);if(r)gcIcs(r.title,r.d,r.t||'09:00',false)};
+
+/* Habits: if a time is set, open Google Calendar (daily repeat) right after adding */
+const _gcHab=A.habadd;
+A.habadd=()=>{const t=($('#ht')||{}).value,n=S.habits.length;_gcHab();if(t&&S.habits.length>n){const h=S.habits[S.habits.length-1];h.t=h.t||t;save();A.hcal(h.id)}};
+
+/* Journal: daily reminder card */
+const _gcJ=V_.jour;
+V_.jour=function(){const t=(S.cfg&&S.cfg.jt)||'21:00';return _gcJ()+'<br><div class="c"><h3>📅 Journal reminder</h3><p class="m">Daily event in Google Calendar so its notification reminds you to write.</p><div class="r"><input id="jrt" type="time" value="'+t+'" style="max-width:120px"><button class="b p" data-a="jcal">Add to Google Calendar</button><button class="b" data-a="jics">🔔 .ics</button></div></div>'};
+A.jcal=()=>{const t=$('#jrt').value||'21:00';S.cfg.jt=t;save();openCal(gcLink('📓 Write FocusFlow journal',dk(),t,true,'Daily journal reminder from FocusFlow'))};
+A.jics=()=>{const t=$('#jrt').value||'21:00';S.cfg.jt=t;save();gcIcs('📓 Write FocusFlow journal',dk(),t,true)};
+</script>
+<script>
+/* v11: floating Google Calendar button */
+(()=>{const btn=document.createElement('button');btn.textContent='📅 Google Calendar';
+btn.style.cssText='position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9999;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(20,24,50,.85);color:#fff;font:600 14px sans-serif;backdrop-filter:blur(6px)';
+btn.onclick=()=>openCal('https://calendar.google.com/calendar/u/0/r');
+document.body.appendChild(btn)})();
+</script>
 </body></html>
