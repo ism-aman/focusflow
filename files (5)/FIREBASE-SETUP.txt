@@ -1,0 +1,9 @@
+1. console.firebase.google.com > Add project (free Spark plan).
+2. Build > Authentication > Get started > Google > Enable.
+3. Build > Firestore Database > Create (production mode).
+4. Firestore > Rules, publish:
+   rules_version='2';
+   service cloud.firestore{match /databases/{d}/documents{
+     match /users/{uid}{allow read,write:if request.auth!=null&&request.auth.uid==uid;}}}
+5. Project settings > Your apps > Web (</>) > copy config into firebase-config.js.
+6. Authentication > Settings > Authorized domains > add your Netlify/GitHub Pages domain.
