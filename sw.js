@@ -1,5 +1,42 @@
-const C='focusflow-v11',F=['./','index.html','manifest.json','firebase-config.js','icon.svg','icon-192.png','icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F)));self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.pathname.startsWith('/__/')||(u.origin!==location.origin&&!['www.gstatic.com','fonts.googleapis.com','fonts.gstatic.com'].includes(u.hostname)))return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(n=>{const cp=n.clone();caches.open(C).then(c=>c.put(e.request,cp));return n}).catch(()=>caches.match('index.html'))))});
-self.addEventListener('notificationclick',e=>{e.notification.close();const id=e.notification.data&&e.notification.data.id,dn=e.action==='done'&&id;e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(l=>{if(l.length){dn&&l[0].postMessage({done:id});return l[0].focus()}return clients.openWindow('./index.html?v=rem'+(dn?'&done='+id:''))}))});
+// FocusFlow service worker: network-first, so new uploads show up right away.
+// Har baar HTML update upload karo to VERSION badal do (v13, v14 ...)
+const VERSION = 'v14';
+
+self.addEventListener('install', e => { self.skipWaiting(); });
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+// Network first; cache is only a fallback when offline.
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    fetch(e.request, { cache: 'no-store' })
+      .then(res => {
+        const copy = res.clone();
+        caches.open(VERSION).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
+});
+
+// "Mark done" button on a reminder notification
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const id = e.notification.data && e.notification.data.id;
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      if (e.action === 'done' && id) {
+        if (list.length) { list.forEach(c => c.postMessage({ done: id })); return; }
+        return self.clients.openWindow('./?v=rem&done=' + encodeURIComponent(id));
+      }
+      if (list.length) return list[0].focus();
+      return self.clients.openWindow('./');
+    })
+  );
+});
